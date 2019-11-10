@@ -1,10 +1,12 @@
 """Utilities for handling interpretation request data."""
-
+from collections import Counter
 import pathlib
 import json
 import jellypy.pyCIPAPI.interpretation_requests as irs
+import jellypy.tierup.panelapp as pa
 
 from jellypy.pyCIPAPI.auth import AuthenticatedCIPAPISession
+
 
 from protocols.util.dependency_manager import VERSION_500
 from protocols.util.factories.avro_factory import GenericFactoryAvro
@@ -77,4 +79,45 @@ class IRJValidator():
             'familyLevelQuestions']['caseSolvedFamily'] != "yes")
         return is_unsolved
 
+class IRJson():
+    """Utilities for parsing IRJson data"""
+
+    def __init__(self, irjson):
+        self.json = irjson
+        self.tiering = self._get_tiering()
+        self.panels = self._get_panels()
+        self.tier_counts = self._get_tiering_counts()
+
+    def _get_tiering(self):
+        tiering_list = list(
+            filter(
+                lambda x: x['interpreted_genome_data']['interpretationService'] == 'genomics_england_tiering',
+                self.json['interpreted_genome']
+            )
+        )
+        assert len(tiering_list) == 1, "0 or >1 gel tiering interpretation found"
+        return tiering_list.pop()
+    
+    def _get_panels(self):
+        _panels = {}
+        data = self.json['interpretation_request_data']['json_request']['pedigree']['analysisPanels']
+        for item in data:
+            try:
+                panel = pa.GeLPanel(item['panelName'])
+                _panels[panel.name] = panel
+            except requests.HTTPError:
+                print(f'Warning. No PanelApp API reponse for {item["panelName"]}')
+        return _panels
+
+    def _get_tiering_counts(self):
+        """Count variants in each tiering band for a gel tiering interpreted genome"""
+        tiers = [ event['tier']
+            for data in self.tiering['interpreted_genome_data']['variants']
+            for event in data['reportEvents']
+        ]
+        return Counter(tiers)
+
+    def update_panel(self, panel_name, panel_id):
+        """Update a panel with a new ID from the GeL panelapp API"""
+        self.panels[panel_name] = pa.GeLPanel(panel_id)
 

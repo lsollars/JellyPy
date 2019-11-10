@@ -8,6 +8,8 @@ Usage from /JellyPy/tierup:
 import pytest
 import jellypy.pyCIPAPI.auth as auth
 import jellypy.tierup.irtools as irt
+import jellypy.tierup.panelapp as pa
+import jellypy.tierup.lib as lib
 
 @pytest.fixture
 def cipapi_session(jellypy_config):
@@ -59,3 +61,30 @@ class TestIRValidator():
         """Test json has not been reported solved"""
         validator = irt.IRJValidator()
         assert validator.is_unsolved(irjson) == True
+
+
+class TestTierUpLib():
+    def test_get_gene_map(self):
+        """Test that the panel app gene map returns the structure: Dict[str, tuple]"""
+        panel = pa.GeLPanel(213)
+        mapping = panel.get_gene_map()
+        key, value = list(mapping.items())[0]
+        assert isinstance(key, str)
+        assert isinstance(value, tuple)
+    
+    def test_irj_object(self, irjson):
+        irjo = irt.IRJson(irjson)
+        assert irjo.tiering['interpretationService'] == 'genomics_england_tiering'
+        assert isinstance(irjo.panels, dict)
+        irjo.update_panel('NEWPANEL', 123)
+        assert 'NEWPANEL' in irjo.panels
+
+    def test_event_manager(self, irjson):
+        irjo = irt.IRJson(irjson)
+        variant, event = next(lib.generate_events(irjo))
+        assert isinstance(variant, dict)
+        assert isinstance(event, lib.ReportEvent)
+        em = lib.EventManager(event, irjo)
+        em_tuple = em.query_panel_app()
+        assert isinstance(em_tuple, tuple)
+
