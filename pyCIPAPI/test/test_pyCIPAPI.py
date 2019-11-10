@@ -38,19 +38,3 @@ class TestIRTools():
         """Interpretation request jsons can be downloaded from the CIPAPI"""
         data = irs.get_interpretation_request_json(2202, 2, session=cipapi_session)
         assert isinstance(data, dict)
-    
-    def test_v6_validator(self, cipapi_session):
-        """Returned json is GeL v6 model.
-        Although we use the reports_v6=True request parameter, earlier interpretation request jsons
-        are returned without v6 data structure. Here we test two examples with the gelmodels validation."""
-        is_v6 = irs.get_interpretation_request_json(54715,1,session=cipapi_session)
-        not_v6 = irs.get_interpretation_request_json(45,2,session=cipapi_session)
-
-        v6_validator = irs.get_v6_interpreted_genome_validator()
-
-        # Test the first interpreted genome against the interpreted genome v6 model
-        is_v6_ig = is_v6['interpreted_genome'][0]['interpreted_genome_data']
-        not_v6_ig = not_v6['interpreted_genome'][0]['interpreted_genome_data']
-        
-        assert v6_validator.validate(is_v6_ig) == True
-        assert v6_validator.validate(not_v6_ig) == False
