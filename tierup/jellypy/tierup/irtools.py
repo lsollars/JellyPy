@@ -45,7 +45,15 @@ class IRJValidator():
         pass
     
     def validate(self, irjson):
-        return self.is_v6(irjson) and self.is_sent(irjson) and self.is_unsolved(irjson)
+        is_v6 = self.is_v6(irjson)
+        is_sent = self.is_sent(irjson)
+        is_unsolved = self.is_unsolved(irjson)
+
+        if is_v6 and is_sent and is_unsolved:
+            pass
+        else:
+            raise IOError(f'Invalid interpretation request JSON: '
+            f'is_v6:{is_v6}, is_sent:{is_sent}, is_unsolved:{is_unsolved}')
 
     def is_v6(self, irjson):
         """Returns true if the interpreted genome of an irjson is GeL v6 model.
@@ -82,8 +90,9 @@ class IRJValidator():
 class IRJson():
     """Utilities for parsing IRJson data"""
 
-    def __init__(self, irjson):
+    def __init__(self, irjson, validator=IRJValidator):
         self.json = irjson
+        validator().validate(self.json)
         self.tiering = self._get_tiering()
         self.panels = self._get_panels()
         self.tier_counts = self._get_tiering_counts()
@@ -95,6 +104,9 @@ class IRJson():
                 self.json['interpreted_genome']
             )
         )
+        # TODO: Although the interpreted genome is in an array, we are yet to encounter a request with more than one
+        # run of the genomics england tiering pipeline. Regardless, this is a temporary failsafe and we would rather
+        # select the latest one.
         assert len(tiering_list) == 1, "0 or >1 gel tiering interpretation found"
         return tiering_list.pop()
     
@@ -123,3 +135,8 @@ class IRJson():
         """Update a panel with a new ID from the GeL panelapp API"""
         self.panels[panel_name] = pa.GeLPanel(panel_id)
 
+    @classmethod
+    def from_file(cls, filepath):
+        with open(filepath) as f:
+            data = json.load(f)
+        return cls(data)
