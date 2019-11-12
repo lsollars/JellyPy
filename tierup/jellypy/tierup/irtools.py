@@ -111,11 +111,13 @@ class IRJson():
 
     def _get_tiering_counts(self):
         """Count variants in each tiering band for a gel tiering interpreted genome"""
+        tier_counts = dict.fromkeys(['TIER1','TIER2','TIER3'], 0)
         tiers = [ event['tier']
             for data in self.tiering['interpreted_genome_data']['variants']
             for event in data['reportEvents']
         ]
-        return Counter(tiers)
+        tier_counts.update(Counter(tiers))
+        return tier_counts
 
     def update_panel(self, panel_name, panel_id):
         """Update a panel with a new ID from the GeL panelapp API"""
