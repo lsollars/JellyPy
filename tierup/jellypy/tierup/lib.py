@@ -48,10 +48,14 @@ class EventPanelMatcher():
         # panel/gene information.
         panel = self.irjo.panels[self.event.panel]
         try:
+            # Query panelapp. Dictionary returned maps panelapp_gene:(panelapp_hgnc, panelapp_confidence).
             gene_map = panel.get_gene_map()
             hgnc, confidence = gene_map[self.event.gene]
             return self.event.gene, hgnc, confidence, panel
         except KeyError:
+            # The event.gene does not map to panelapp_gene because either:
+            # - gene symbol has changed over time
+            # - the gene has been dropped from the panel 
             return self.event.gene, None, None, panel
 
 def build_tierup_report(irjo, extra_panels = None):
