@@ -10,7 +10,6 @@ setup(
     url='https://github.com/NHS-NGS/JellyPy',
     packages=find_packages(),
     install_requires=[
-        'jellypy-pyCIPAPI'
-    ],
-    dependency_links = ['https://github.com/NHS-NGS/JellyPy/tree/0.1.0-dev/pyCIPAPI#egg=jellypy-pyCIPAPI-0.1.0']
+        'jellypy-pyCIPAPI @ git+https://github.com/NHS-NGS/JellyPy.git@0.1.0-tierup.1#subdirectory=pyCIPAPI&egg=jellypy-pyCIPAPI'
+    ]
 )
