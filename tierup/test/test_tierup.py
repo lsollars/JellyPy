@@ -64,6 +64,11 @@ class TestIRValidator():
 
 
 class TestTierUpLib():
+
+    @pytest.fixture
+    def irjo(self, irjson):
+        return irt.IRJson(irjson)
+
     def test_get_gene_map(self):
         """Test that the panel app gene map returns the structure: Dict[str, tuple]"""
         panel = pa.GeLPanel(213)
@@ -72,19 +77,26 @@ class TestTierUpLib():
         assert isinstance(key, str)
         assert isinstance(value, tuple)
     
-    def test_irj_object(self, irjson):
-        irjo = irt.IRJson(irjson)
+    def test_irj_object(self, irjo):
         assert irjo.tiering['interpretationService'] == 'genomics_england_tiering'
         assert isinstance(irjo.panels, dict)
         irjo.update_panel('NEWPANEL', 123)
         assert 'NEWPANEL' in irjo.panels
 
-    def test_event_manager(self, irjson):
-        irjo = irt.IRJson(irjson)
-        variant, event = next(lib.generate_events(irjo))
-        assert isinstance(variant, dict)
+    def test_event_checker(self, irjo):
+        event = next(lib.generate_events(irjo))
         assert isinstance(event, lib.ReportEvent)
-        em = lib.EventManager(event, irjo)
+        assert isinstance(event.variant, dict)
+        em = lib.EventPanelMatcher(event, irjo)
         em_tuple = em.query_panel_app()
         assert isinstance(em_tuple, tuple)
+
+    def test_reporter(self, irjo):
+        count = 0
+        for item in lib.build_tierup_report(irjo):
+            print(item)
+            count += 1
+        print(count)
+        assert False
+
 
