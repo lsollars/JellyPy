@@ -75,17 +75,21 @@ class IRJValidator():
         return is_sent
     
     def is_unsolved(self, irjson):
-        """Returns True if no reports have been issued that indicate the case has been solved."""
+        """Returns True if no reports have been issued where the case has been solved."""
+        # If a report has not been issued, the clinical_report field will be an empty list. Return True.
         if irjson['clinical_report'] == []:
             return True
 
-        most_recent_report = max(irjson['clinical_report'], key = lambda x: x['clinical_report_version'])
-        if most_recent_report['exit_questionnaire'] == None:
+        reports = irjson['clinical_report']
+        reports_with_questionnaire = [ report for report in reports if report['exit_questionnaire'] is not None ]
+        reports_solved = [ report for report in reports_with_questionnaire if report[
+            'exit_questionnaire']['exit_questionnaire_data']['familyLevelQuestions']['caseSolvedFamily'
+            ] == "yes"
+        ]
+        if any(reports_solved):
+            return False
+        else:
             return True
-
-        is_unsolved = (most_recent_report['exit_questionnaire']['exit_questionnaire_data'][
-            'familyLevelQuestions']['caseSolvedFamily'] != "yes")
-        return is_unsolved
 
 class IRJson():
     """Utilities for parsing IRJson data"""
