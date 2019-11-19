@@ -95,11 +95,15 @@ class IRJson():
     """Utilities for parsing IRJson data"""
 
     def __init__(self, irjson, validator=IRJValidator):
+        validator().validate(irjson)
         self.json = irjson
-        validator().validate(self.json)
         self.tiering = self._get_tiering()
-        self.panels = self._get_panels()
         self.tier_counts = self._get_tiering_counts()
+
+        # Setup panels and extra_panels objects
+        self.panels = self._get_panels()
+        self.updated_panels = []
+
 
     def _get_tiering(self):
         tiering_list = list(
@@ -136,8 +140,10 @@ class IRJson():
         return tier_counts
 
     def update_panel(self, panel_name, panel_id):
-        """Update a panel with a new ID from the GeL panelapp API"""
-        self.panels[panel_name] = pa.GeLPanel(panel_id)
+        """Add or update a panel name using an ID from the PanelApp API"""
+        new_panel = pa.GeLPanel(panel_id)
+        self.panels[panel_name] = new_panel
+        self.updated_panels.append(f"{panel_name}, {panel_id}")
 
     @classmethod
     def from_file(cls, filepath):
