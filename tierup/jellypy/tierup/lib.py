@@ -1,6 +1,9 @@
 import datetime
 import pkg_resources
 
+from jellypy.tierup.irtools import IRJson
+from jellypy.tierup.panelapp import PanelApp
+
 def generate_events(irjo):
     variant_events = (
         ReportEvent(event, variant) for variant in irjo.tiering['interpreted_genome_data']['variants']
@@ -25,7 +28,7 @@ class ReportEvent():
 
 class EventPanelMatcher():
 
-    def __init__(self, event: ReportEvent, irjo):
+    def __init__(self, event: ReportEvent, irjo: IRJson):
         self.event = event
         self.irjo = irjo
         self.check_panels()
@@ -57,6 +60,45 @@ class EventPanelMatcher():
             # - gene symbol has changed over time
             # - the gene has been dropped from the panel 
             return self.event.gene, None, None, panel
+
+class PanelUpdater():
+    # Report events describe their panels by "Name" and "version".
+    # The interpretation_request_data describes the panels applied to the interpretation request by hash id.
+    #    Panel names can change over time, therefore pulling panel data by hash may return a panel with a name
+    #    that does not match the names in the report event. This class takes an irjson object, which has its
+    #    interpretation_request_data panel names. It pulls panel names from all report events. Any names that 
+    #    are missing are searched for in the gel API and the IRJ object is updated.
+    ## Scenario: IRJson hash is outdated?
+    def __init__(self):
+        pass
+
+    def add_event_panels(self, irjo):
+        missing_panels = self._find_missing_event_panels(irjo)
+        panels_to_add = self._search_panelapp(missing_panels)
+        for name, identifier in panels_to_add:
+            irjo.update_panel(name, identifier)
+
+    def _search_panelapp(self, missing_panels):
+        oldname_id = []
+        # for panel in panel app;
+        pa = PanelApp()
+        for gel_panel in pa:
+           for panel_name in missing_panels:
+               if panel_name in gel_panel['relevant_disorders']:
+                   # Note assumption: All panel names have one ID matching in panel app
+                   oldname_id.append((panel_name, gel_panel['id']))
+        return oldname_id
+
+    def _find_missing_event_panels(self, irjo):
+        # Get all panel names from report events and filter those that are not
+        # the name of any of the interpretation request panels today.
+        event_panels = {
+            event['genePanel']['panelName']
+            for variant_data in irjo.tiering['interpreted_genome_data']['variants']
+            for event in variant_data['reportEvents']
+        }
+        ir_panels = set(irjo.panels.keys())
+        return event_panels - ir_panels
 
 def build_tierup_report(irjo, extra_panels = None):
     for event in generate_events(irjo):
