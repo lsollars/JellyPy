@@ -3,8 +3,9 @@
 Tests for jellypy tierup package.
 
 Usage from /JellyPy/tierup:
-    pytest --pconfig=test/config.ini
+    pytest --jpconfig=test/config.ini
 """
+import json
 import pytest
 import jellypy.pyCIPAPI.auth as auth
 import jellypy.tierup.irtools as irt
@@ -62,7 +63,6 @@ class TestIRValidator():
         validator = irt.IRJValidator()
         assert validator.is_unsolved(irjson) == True
 
-
 class TestTierUpLib():
 
     @pytest.fixture
@@ -91,12 +91,12 @@ class TestTierUpLib():
         em_tuple = em.query_panel_app()
         assert isinstance(em_tuple, tuple)
 
-    def test_reporter(self, irjo):
-        count = 0
-        for item in lib.build_tierup_report(irjo):
-            print(item)
-            count += 1
-        print(count)
-        assert False
-
-
+    def test_panel_updater(self):
+        # 11109-1.json is the test for this. Pull from API.
+        with open('/home/nana/Documents/work/JellyPy/scripts/11109-1.json') as f:
+            irjo = irt.IRJson(json.load(f))
+        pu = lib.PanelUpdater()
+        current = list(irjo.panels.keys())
+        pu.add_event_panels(irjo)
+        new = irjo.panels.keys()
+        assert new != current
