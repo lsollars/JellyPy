@@ -83,13 +83,37 @@ class TestTierUpLib():
         irjo.update_panel('NEWPANEL', 123)
         assert 'NEWPANEL' in irjo.panels
 
-    def test_event_checker(self, irjo):
-        event = next(lib.generate_events(irjo))
+
+    #TODO
+    # EventPanelMatcher does the bulk of the work for gathering data for TierUp status.
+    # Test it here with the following API
+    # handler = ReportEventHandler(irjo)
+    # for event in handler.generate_events(): # Produces a generator of report_event objects
+    #    response = handler.query_panel_app(event)
+    #    tierup_report = handler.build_report(event, response)
+    #    print_as_csv(tierup_report)  
+    def test_event_generator(self, irjo_local):
+        """Test that the event handler generates report event objects"""
+        reporter = lib.TierUpReporter(irjo_local)
+        event = next(reporter.generate_events())
         assert isinstance(event, lib.ReportEvent)
-        assert isinstance(event.variant, dict)
-        em = lib.EventPanelMatcher(event, irjo)
-        em_tuple = em.query_panel_app()
-        assert isinstance(em_tuple, tuple)
+
+    def test_query_pa(self, irjo_local):
+        reporter = lib.TierUpReporter(irjo_local)
+        test_panel = pa.GeLPanel(123)
+        gene_false = 'ABCD'
+        gene_true = 'ACVRL1'
+        assert reporter.query_panel_app(gene_false, test_panel) == (gene_false, None, None, test_panel)
+        assert all([reporter.query_panel_app(gene_true, test_panel)])
+
+    def test_reporter(self, irjo_local):
+        """Test that the event handler builds TierUp reports"""
+        reporter = lib.TierUpReporter(irjo_local)
+        event = next(reporter.generate_events())
+        panel = irjo_local.panels[event.panel]
+        _, hgnc, confidence, _ = reporter.query_panel_app(event.gene, panel)
+        record = reporter.tierup_record(event, hgnc, confidence, panel)
+        assert isinstance(record, dict)
 
     def test_panel_updater(self):
         # 11109-1.json is the test for this. Pull from API.
