@@ -2,8 +2,6 @@
 
 TierUp is a jellypy module for reanalysing Tier 3 variants in GEL 100KG cases.
 
-At the time of initial analysis, all Tier 3 variants are found in low-confidence genes in their associated PanelApp panel. TierUp checks for  confidence level increases, reporting variants that meet Tier 1 or 2 criteria today.
-
 ## Documentation
 
 <https://acgs.gitbook.io/bioinformatics/jellypy-docs>
