@@ -1,6 +1,6 @@
 # jellypy-tierup
 
-TierUp is a jellypy module for reanalysing Tier 3 variants in GEL 100KG cases.
+`tierup` is a jellypy module for reanalysing Tier 3 variants from GeL 100KG cases.
 
 ## Documentation
 
