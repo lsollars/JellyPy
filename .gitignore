@@ -1,7 +1,11 @@
-# credentials
+# JellyPy
 **/.auth_credentials.py
-**/test/config.ini
-pyCIPAPI/**/*config.ini
+config.ini
+
+# JellyPy dev
+.pytest_cache/
+.vscode/
+_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
