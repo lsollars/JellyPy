@@ -1,42 +1,44 @@
 """Utilities for handling interpretation request data."""
 from collections import Counter
-import pathlib
 import json
+import pathlib
+import re
+
 import jellypy.pyCIPAPI.interpretation_requests as irs
 import jellypy.tierup.panelapp as pa
-
 from jellypy.pyCIPAPI.auth import AuthenticatedCIPAPISession
-
 
 from protocols.util.dependency_manager import VERSION_500
 from protocols.util.factories.avro_factory import GenericFactoryAvro
 from protocols.reports_6_0_1 import InterpretedGenome
 
-def get_irjson(irid: int, irversion: int, session: AuthenticatedCIPAPISession) -> dict:
-    """Get an interpretation request json from the CPIAPI using jellpy.pyCIPAPI library
-    Args:
-        irid: Interpretation request id
-        irv: Interpretation request version
-        session: An authenticated CIPAPI session (pyCIPAPI)
-    Returns:
-        json_response: A dictionary containing the interpretation request response
-    """
-    json_response = irs.get_interpretation_request_json(irid, irversion, reports_v6=True, session=session)
-    return json_response
+class IRJIO():
+    def __init__(self):
+        pass
 
-def save_irjson(ir_json: dict, outdir: str = None, file_name: str = None):
-    """Save interpretation request json"""
-    default_output = ir_json['interpretation_request_data']['json_request']['InterpretationRequestID'] + '.json'
-    output_file = file_name if file_name else default_output
-    output_path = pathlib.Path(outdir, output_file) if outdir else output_file
-    with open(output_path, 'w') as f:
-        json.dump(ir_json, f)
 
-def read_irjson(filepath: str):
-    """Read json file"""
-    with open(filepath, 'r') as f:
-        return json.load(f)
+    def get(self, irid: int, irversion: int, session: AuthenticatedCIPAPISession) -> dict:
+        """Get an interpretation request json from the CPIAPI using jellpy.pyCIPAPI library
+        Args:
+            irid: Interpretation request id
+            irv: Interpretation request version
+            session: An authenticated CIPAPI session (pyCIPAPI)
+        Returns:
+            json_response: A dictionary containing the interpretation request response
+        """
+        json_response = irs.get_interpretation_request_json(irid, irversion, reports_v6=True, session=session)
+        return json_response
 
+    def read(self, filepath: str):
+        """Read IRJ json from disk"""
+        with open(filepath, 'r') as f:
+            return IRJson(json.load(f))
+
+    def save(self, irjson: IRJson, filepath: str = None):
+        """Save IRJson to disk"""
+        _fp = filepath or irjson.irid + '.json'
+        with open(_fp, 'w') as f:
+            json.dump(irjson.json, f)
 
 class IRJValidator():
     """Interpretation request Json V6. Utility methods for interacting with data structure."""
@@ -99,11 +101,8 @@ class IRJson():
         self.json = irjson
         self.tiering = self._get_tiering()
         self.tier_counts = self._get_tiering_counts()
-
-        # Setup panels and extra_panels objects
         self.panels = self._get_panels()
         self.updated_panels = []
-
 
     def _get_tiering(self):
         tiering_list = list(
@@ -145,8 +144,8 @@ class IRJson():
         self.panels[panel_name] = new_panel
         self.updated_panels.append(f"{panel_name}, {panel_id}")
 
-    @classmethod
-    def from_file(cls, filepath):
-        with open(filepath) as f:
-            data = json.load(f)
-        return cls(data)
+    @property
+    def irid(self):
+        irid_full = self.tiering['interpreted_genome_data']['interpretationRequestId']
+        irid_digits = re.search('\d+-\d+', irid_full).group(0)
+        return irid_digits
