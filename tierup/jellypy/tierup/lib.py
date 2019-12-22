@@ -1,15 +1,36 @@
 import datetime
 import pkg_resources
+import json
+import csv
 
-from jellypy.tierup.irtools import IRJson
+from typing import Iterable
+
+from jellypy.tierup.irtools import IRJson, IRJIO
 from jellypy.tierup.panelapp import PanelApp
+
+report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
+
+def set_irj_object(irjson, irid, irversion, config):
+    if irjson:
+        irjo = IRJIO.read(irjson)
+    elif irid and irversion:
+        sess = AuthenticatedCIPAPISession(
+            auth_credentials={
+                'username': config.get('pyCIPAPI', 'username'),
+                'password': config.get('pyCIPAPI', 'password')
+            }
+        )
+        irjio = IRJIO.get(irid, irversion, sess)
+    else:
+        raise Exception('Invalid argument')
+    return irjo
 
 class ReportEvent():
     def __init__(self, event, variant):
         self.data = event
         self.variant = variant
         self.gene = self.get_gene()
-        self.panel = self.data['genePanel']['panelName']
+        self.panelname = self.data['genePanel']['panelName']
 
     def get_gene(self):
         all_genes = [ entity['geneSymbol'] 
@@ -58,10 +79,17 @@ class PanelUpdater():
         ir_panels = set(irjo.panels.keys())
         return event_panels - ir_panels
 
-class TierUpReporter():
+class TierUpRunner():
 
     def __init__(self, irjo):
         self.irjo = irjo
+
+    def run(self, tier_three_events: Iterable[ReportEvent]):
+        for event in tier_three_events:
+            panel = self.irjo.panels[event.panelname]
+            hgnc, conf = self.query_panel_app(event.gene, panel)
+            record = self.tierup_record(event, hgnc, conf, panel)
+            yield record
 
     def generate_events(self):
         for variant in self.irjo.tiering['interpreted_genome_data']['variants']:
@@ -84,14 +112,15 @@ class TierUpReporter():
         try:
             all_genes = panel.get_gene_map()
             hgnc, confidence = all_genes[gene]
-            return gene, hgnc, confidence, panel
+            return hgnc, confidence
         except KeyError:
             # The gene does not map to a panelapp_symbol because either:
             # - gene symbol has changed over time
             # - the gene has been dropped from the panel 
-            return gene, None, None, panel
+            return None, None
 
     def tierup_record(self, event, hgnc, confidence, panel):
+        # TODO: Build from a dictionary/json schema
         record = {
             'justification': event.data['eventJustification'],
             'consequences': str([ cons['name'] for cons in event.data['variantConsequences'] ]),
@@ -138,3 +167,17 @@ class TierUpReporter():
             'tier3_count': self.irjo.tier_counts['TIER3']
         }
         return record
+
+class TierUpCSVWriter():
+    def __init__(self, outfile, schema=report_schema, writer=csv.DictWriter):
+        self.outstream = open(outfile, 'w')
+        self.header = json.loads(schema)['required']
+        self.writer = writer(self.outstream, fieldnames=self.header)
+        self.writer.writeheader()
+
+    def write(self, data):
+        self.writer.writerow(data)
+    
+    def close_file(self):
+        self.outstream.close()
+
