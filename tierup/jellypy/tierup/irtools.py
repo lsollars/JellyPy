@@ -12,34 +12,6 @@ from protocols.util.dependency_manager import VERSION_500
 from protocols.util.factories.avro_factory import GenericFactoryAvro
 from protocols.reports_6_0_1 import InterpretedGenome
 
-class IRJIO():
-    def __init__(self):
-        pass
-
-
-    def get(self, irid: int, irversion: int, session: AuthenticatedCIPAPISession) -> dict:
-        """Get an interpretation request json from the CPIAPI using jellpy.pyCIPAPI library
-        Args:
-            irid: Interpretation request id
-            irv: Interpretation request version
-            session: An authenticated CIPAPI session (pyCIPAPI)
-        Returns:
-            json_response: A dictionary containing the interpretation request response
-        """
-        json_response = irs.get_interpretation_request_json(irid, irversion, reports_v6=True, session=session)
-        return json_response
-
-    def read(self, filepath: str):
-        """Read IRJ json from disk"""
-        with open(filepath, 'r') as f:
-            return IRJson(json.load(f))
-
-    def save(self, irjson: IRJson, filepath: str = None):
-        """Save IRJson to disk"""
-        _fp = filepath or irjson.irid + '.json'
-        with open(_fp, 'w') as f:
-            json.dump(irjson.json, f)
-
 class IRJValidator():
     """Interpretation request Json V6. Utility methods for interacting with data structure."""
     
@@ -149,3 +121,34 @@ class IRJson():
         irid_full = self.tiering['interpreted_genome_data']['interpretationRequestId']
         irid_digits = re.search('\d+-\d+', irid_full).group(0)
         return irid_digits
+
+
+class IRJIO():
+    def __init__(self):
+        pass
+
+    @classmethod
+    def get(cls, irid: int, irversion: int, session: AuthenticatedCIPAPISession) -> dict:
+        """Get an interpretation request json from the CPIAPI using jellpy.pyCIPAPI library
+        Args:
+            irid: Interpretation request id
+            irv: Interpretation request version
+            session: An authenticated CIPAPI session (pyCIPAPI)
+        Returns:
+            json_response: A dictionary containing the interpretation request response
+        """
+        json_response = irs.get_interpretation_request_json(irid, irversion, reports_v6=True, session=session)
+        return IRJson(json_response)
+
+    @classmethod
+    def read(cls, filepath: str):
+        """Read IRJ json from disk"""
+        with open(filepath, 'r') as f:
+            return IRJson(json.load(f))
+
+    @classmethod
+    def save(cls, irjson: IRJson, filepath: str = None):
+        """Save IRJson to disk"""
+        _fp = filepath or irjson.irid + '.json'
+        with open(_fp, 'w') as f:
+            json.dump(irjson.json, f)
