@@ -134,6 +134,7 @@ class IRJIO():
             irid: Interpretation request id
             irv: Interpretation request version
             session: An authenticated CIPAPI session (pyCIPAPI)
+        
         Returns:
             json_response: A dictionary containing the interpretation request response
         """

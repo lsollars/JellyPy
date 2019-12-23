@@ -102,12 +102,13 @@ class TierUpRunner():
         Args:
             gene: A gene symbol
             panel: A GeLPanel object
+        
         Returns:
             event_hgnc_confidence_panel (Tuple): A tuple containing four elements:
-                [0] `gene` from args
-                [1] the hgnc id from panel app. None if not found
-                [2] the confidence level from panel app. None if not found
-                [3] `panel` from args
+            [0] `gene` from args
+            [1] the hgnc id from panel app. None if not found
+            [2] the confidence level from panel app. None if not found
+            [3] `panel` from args
         """
         try:
             all_genes = panel.get_gene_map()
