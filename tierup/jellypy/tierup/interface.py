@@ -1,10 +1,19 @@
 import click
 import configparser
 import json
+import logging
+import pathlib
 
 from jellypy.tierup.irtools import IRJIO
-from jellypy.tierup.main import main
-from jellypy.tierup.lib import set_irj_object
+from jellypy.tierup.main import main, write_csv
+from jellypy.tierup.logger import log_setup
+
+import jellypy.tierup.lib as tulib
+
+log_setup()
+logger = logging.getLogger(__name__)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 def parse_config(ctx, param, value):
     config = configparser.ConfigParser()
@@ -29,5 +38,9 @@ def parse_config(ctx, param, value):
     "-o", "--outdir", type=click.Path(), help="Output directory for tierup files", default=None
 )
 def cli(config, irid, irversion, irjson, outdir):
-    irjo = set_irj_object(irjson, irid, irversion, config)
-    main(irjo, outdir)
+    logger.info('App start')
+    irjo = tulib.set_irj_object(irjson, irid, irversion, config)
+    records = main(irjo)
+    outfile = pathlib.Path(outdir or "", irjo.irid + ".tierup.csv")
+    write_csv(records, outfile)
+    logger.info('App end')

@@ -1,6 +1,7 @@
 import datetime
 import pkg_resources
 import json
+import logging
 import csv
 
 from typing import Iterable
@@ -8,12 +9,16 @@ from typing import Iterable
 from jellypy.tierup.irtools import IRJson, IRJIO
 from jellypy.tierup.panelapp import PanelApp
 
+logger = logging.getLogger(__name__)
+
 report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
 
 def set_irj_object(irjson, irid, irversion, config):
     if irjson:
+        logger.info(f'Reading from local file: {irjson}')
         irjo = IRJIO.read(irjson)
     elif irid and irversion:
+        logger.info(f'Downloading from CIPAPI: {irid}-{irversion}')
         sess = AuthenticatedCIPAPISession(
             auth_credentials={
                 'username': config.get('pyCIPAPI', 'username'),
@@ -84,7 +89,8 @@ class TierUpRunner():
     def __init__(self, irjo):
         self.irjo = irjo
 
-    def run(self, tier_three_events: Iterable[ReportEvent]):
+    def run(self):
+        tier_three_events = self.generate_events()
         for event in tier_three_events:
             panel = self.irjo.panels[event.panelname]
             hgnc, conf = self.query_panel_app(event.gene, panel)
