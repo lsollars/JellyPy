@@ -13,22 +13,6 @@ logger = logging.getLogger(__name__)
 
 report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
 
-def set_irj_object(irjson, irid, irversion, config):
-    if irjson:
-        logger.info(f'Reading from local file: {irjson}')
-        irjo = IRJIO.read(irjson)
-    elif irid and irversion:
-        logger.info(f'Downloading from CIPAPI: {irid}-{irversion}')
-        sess = AuthenticatedCIPAPISession(
-            auth_credentials={
-                'username': config.get('pyCIPAPI', 'username'),
-                'password': config.get('pyCIPAPI', 'password')
-            }
-        )
-        irjio = IRJIO.get(irid, irversion, sess)
-    else:
-        raise Exception('Invalid argument')
-    return irjo
 
 class ReportEvent():
     def __init__(self, event, variant):
