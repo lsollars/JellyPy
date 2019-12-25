@@ -1,16 +1,18 @@
 """Utilities for handling interpretation request data."""
-from collections import Counter
 import json
 import pathlib
 import re
+from collections import Counter
 
 import jellypy.pyCIPAPI.interpretation_requests as irs
 import jellypy.tierup.panelapp as pa
-from jellypy.pyCIPAPI.auth import AuthenticatedCIPAPISession
+import requests
 
+from jellypy.pyCIPAPI.auth import AuthenticatedCIPAPISession
+from protocols.reports_6_0_1 import InterpretedGenome
 from protocols.util.dependency_manager import VERSION_500
 from protocols.util.factories.avro_factory import GenericFactoryAvro
-from protocols.reports_6_0_1 import InterpretedGenome
+
 
 class IRJValidator():
     """Interpretation request Json V6. Utility methods for interacting with data structure."""
@@ -75,6 +77,9 @@ class IRJson():
         self.tier_counts = self._get_tiering_counts()
         self.panels = self._get_panels()
         self.updated_panels = []
+    
+    def __str__(self):
+        return f'{self.__class__}:{self.irid}'
 
     def _get_tiering(self):
         tiering_list = list(
