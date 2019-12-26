@@ -15,12 +15,21 @@ from protocols.util.factories.avro_factory import GenericFactoryAvro
 
 
 class IRJValidator():
-    """Interpretation request Json V6. Utility methods for interacting with data structure."""
+    """Validate interpretation request json data for TierUp reanalysis.
+    """
     
     def __init__(self):
         pass
     
-    def validate(self, irjson):
+    def validate(self, irjson: dict) -> None:
+        """Validate interpretation request data for TierUp reanalysis.
+        Calls boolean methods to validate the interpretation request data.
+        
+        Args:
+            irjson: Interpretation request data in json format.
+        Raises:
+            IOError: Raised if any validation functions return False
+        """
         is_v6 = self.is_v6(irjson)
         is_sent = self.is_sent(irjson)
         is_unsolved = self.is_unsolved(irjson)
@@ -31,9 +40,14 @@ class IRJValidator():
             raise IOError(f'Invalid interpretation request JSON: '
             f'is_v6:{is_v6}, is_sent:{is_sent}, is_unsolved:{is_unsolved}')
 
-    def is_v6(self, irjson):
+    @staticmethod
+    def is_v6(irjson: dict) -> bool:
         """Returns true if the interpreted genome of an irjson is GeL v6 model.
-        Despite using the report_v6 argument, older interpretation requests are not returned with this schema."""
+        Despite using the report_v6 argument, older interpretation requests are not returned with this schema.
+        
+        Args:
+            irjson: Interpretation request data in json format.
+        """
         try:
             irj_genome = irjson['interpreted_genome'][0]['interpreted_genome_data']
         except KeyError:
@@ -42,16 +56,25 @@ class IRJValidator():
         ir_factory_instance = ir_factory()
         return ir_factory_instance.validate(irj_genome)
 
-    def is_sent(self, irjson):
-        """Returns true if the irjson has been submitted to the interpretation portal by GeL.
-        Requests are given this status once all QC checks are passed and decision support service
-        has processed data.
+    @staticmethod
+    def is_sent(irjson:dict) -> bool:
+        """Check if the interpretation request submitted to the interpretation portal by GeL.
+        This happens once all QC checks are passed and a decision support service has processed data.
+
+        Args:
+            irjson: Interpretation request data in json format.
         """
         is_sent = 'sent_to_gmcs' in [item['status'] for item in irjson['status']]
         return is_sent
     
-    def is_unsolved(self, irjson):
-        """Returns True if no reports have been issued where the case has been solved."""
+    @staticmethod
+    def is_unsolved(irjson: dict) -> bool:
+        """Returns True if no reports have been issued where the case has been solved.
+
+        Args:
+            irjson: Interpretation request data in json format.  
+
+        """
         # If a report has not been issued, the clinical_report field will be an empty list. Return True.
         if irjson['clinical_report'] == []:
             return True
@@ -68,7 +91,21 @@ class IRJValidator():
             return True
 
 class IRJson():
-    """Utilities for parsing IRJson data"""
+    """Utilities for parsing IRJson data
+    
+    Args:
+        irjson: An interpretation request json object
+        validator: An IRJValidator instance
+    Attributes:
+        json(dict): Interpretation request json data passed to class constructor
+        irid(str): A string linking the interpretation request id and version e.g. 1243-1
+        tiering(dict): The GeL tiering interpreted genome
+        tier_counts(dict): Tier:Int mapping showing the number of variants in each tier
+        panels(dict): name:jellypy.tierup.panelapp.GeLPanel objects for each panel in the interpretation request metadata
+        updated_panels(list): Any panel ids updated using the `update_panels` method.
+    Methods:
+        update_panel: Add a new panel to the panels attribute
+    """
 
     def __init__(self, irjson, validator=IRJValidator):
         validator().validate(irjson)
@@ -129,32 +166,42 @@ class IRJson():
 
 
 class IRJIO():
+    """Utilities for reading, writing and downloading interpretation request json data."""
     def __init__(self):
         pass
 
     @classmethod
-    def get(cls, irid: int, irversion: int, session: AuthenticatedCIPAPISession) -> dict:
+    def get(cls: object, irid: int, irversion: int, session: AuthenticatedCIPAPISession) -> IRJson:
         """Get an interpretation request json from the CPIAPI using jellpy.pyCIPAPI library
+
         Args:
             irid: Interpretation request id
-            irv: Interpretation request version
+            irversion: Interpretation request version
             session: An authenticated CIPAPI session (pyCIPAPI)
-        
         Returns:
-            json_response: A dictionary containing the interpretation request response
+            An IRJson object
         """
         json_response = irs.get_interpretation_request_json(irid, irversion, reports_v6=True, session=session)
         return IRJson(json_response)
 
     @classmethod
-    def read(cls, filepath: str):
-        """Read IRJ json from disk"""
+    def read(cls, filepath: str) -> IRJson:
+        """Read an interpretation request json from a file.
+        
+        Args:
+            filepath: Path to interpretation request json file
+        Returns:
+            An IRJson object"""
         with open(filepath, 'r') as f:
             return IRJson(json.load(f))
 
     @classmethod
-    def save(cls, irjson: IRJson, filepath: str = None):
-        """Save IRJson to disk"""
+    def save(cls, irjson: IRJson, filepath: str = None) -> None:
+        """Save an interpertation request json to a file
+        
+        Args:
+            irjson: An IRJson object to save
+            filepath: Path to write interpretation request json file"""
         _fp = filepath or irjson.irid + '.json'
         with open(_fp, 'w') as f:
             json.dump(irjson.json, f)

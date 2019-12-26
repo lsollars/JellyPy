@@ -50,7 +50,7 @@ def run_tierup(irjo: IRJson):
 
 def write_csv(records, outfile):
     logger.info(f'Writing results to {outfile}')
-    writer = lib.TierUpCSVWriter(outfile=outfile)
+    writer = lib.TierUpCSVWriter(schema=lib.report_schema, outfile=outfile)
     for record in records:
         writer.write(record)
     writer.close_file()

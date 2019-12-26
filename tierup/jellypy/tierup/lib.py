@@ -15,13 +15,23 @@ report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.sch
 
 
 class ReportEvent():
+    """Represents a tiering report event.
+    Args:
+        event: A report event from the irjson tiering section
+        variant: The variant under which the report event is nested in the irjson
+    Attributes:
+        data: Report event passed to class constructor
+        variant: Variant passed to class constructor
+        gene: The gene symbol for the tiered report event variant
+        panelname: The panel name relevant to the report event variant
+    """
     def __init__(self, event, variant):
         self.data = event
         self.variant = variant
-        self.gene = self.get_gene()
+        self.gene = self._get_gene()
         self.panelname = self.data['genePanel']['panelName']
 
-    def get_gene(self):
+    def _get_gene(self):
         all_genes = [ entity['geneSymbol'] 
             for entity in self.data['genomicEntities']
             if entity['type'] == 'gene'
@@ -30,23 +40,35 @@ class ReportEvent():
         return all_genes.pop()
 
 class PanelUpdater():
-    # Report events describe their panels by "Name" and "version".
-    # The interpretation_request_data describes the panels applied to the interpretation request by hash id.
-    #    Panel names can change over time, therefore pulling panel data by hash may return a panel with a name
-    #    that does not match the names in the report event. This class takes an irjson object, which has its
-    #    interpretation_request_data panel names. It pulls panel names from all report events. Any names that 
-    #    are missing are searched for in the gel API and the IRJ object is updated.
-    ## Scenario: IRJson hash is outdated?
+    """Update panel IDs in IRJson object panels.
+    
+    Panels applied when tier 3 variants were reported may have different PanelApp IDs today.
+    This class searches PanelApp to update panel identifiers where necessary.
+    """
     def __init__(self):
         pass
 
-    def add_event_panels(self, irjo):
+    def add_event_panels(self, irjo: IRJson) -> None:
+        """Add new panel identifiers to IRJson objects where panels have been merged.
+        This updates the ID of renamed or merged panels, ensuring the accurate current panel is returned
+        from any downstream PanelApp API calls.
+
+        Args:
+            irjo: An interpretation request json object
+        """
         missing_panels = self._find_missing_event_panels(irjo)
         panels_to_add = self._search_panelapp(missing_panels)
         for name, identifier in panels_to_add:
             irjo.update_panel(name, identifier)
 
-    def _search_panelapp(self, missing_panels):
+    def _search_panelapp(self, missing_panels) -> list:
+        """Search the relevant disorders section of panelapp for given panel names.
+    
+        Args:
+            missing_panels: Panel names to find in panelapp.
+        Returns:
+            List[Tuple]: A list of tuples containing the panel name and relevant ID.
+        """
         oldname_id = []
         # for panel in panel app;
         pa = PanelApp()
@@ -57,9 +79,16 @@ class PanelUpdater():
                    oldname_id.append((panel_name, gel_panel['id']))
         return oldname_id
 
-    def _find_missing_event_panels(self, irjo):
-        # Get all panel names from report events and filter those that are not
-        # the name of any of the interpretation request panels today.
+    def _find_missing_event_panels(self, irjo) -> set:
+        """Panel names reported with tiered variants and remove those 
+        missing from the top-level of the interpretation request today.
+
+        Args:
+            irjo: An interpretation request json object
+        Returns:
+            A set of panel names missing from the top-level of the interpretation request. These names
+                have likely been updated and filed uner a new panel ID.
+        """
         event_panels = {
             event['genePanel']['panelName']
             for variant_data in irjo.tiering['interpreted_genome_data']['variants']
@@ -69,36 +98,46 @@ class PanelUpdater():
         return event_panels - ir_panels
 
 class TierUpRunner():
+    """Run TierUp on an interpretation request json object
 
-    def __init__(self, irjo):
+    Args:
+        irjo: Interpretation request json object
+    """
+
+    def __init__(self, irjo:IRJson):
         self.irjo = irjo
 
     def run(self):
-        tier_three_events = self.generate_events()
+        """Run tierup algorithm
+
+        Returns:
+            Generator containing tierup CSV results for each tier 3 variant
+        """
+        tier_three_events = self._generate_events()
         for event in tier_three_events:
             panel = self.irjo.panels[event.panelname]
             hgnc, conf = self.query_panel_app(event.gene, panel)
-            record = self.tierup_record(event, hgnc, conf, panel)
+            record = self._tierup_record(event, hgnc, conf, panel)
             yield record
 
-    def generate_events(self):
+    def _generate_events(self):
         for variant in self.irjo.tiering['interpreted_genome_data']['variants']:
             for event in variant['reportEvents']:
                 if event['tier'] == 'TIER3':
                     yield ReportEvent(event, variant)
 
-    def query_panel_app(self, gene, panel):
+    def query_panel_app(self, gene: str, panel):
         """Get the hgnc id and confidence level for a gene from the panelapp API.
+        
         Args:
             gene: A gene symbol
             panel: A GeLPanel object
-        
         Returns:
-            event_hgnc_confidence_panel (Tuple): A tuple containing four elements:
-            [0] `gene` from args
-            [1] the hgnc id from panel app. None if not found
-            [2] the confidence level from panel app. None if not found
-            [3] `panel` from args
+            A tuple containing four elements:
+                - [0] `gene` from args
+                - [1] the hgnc id from panel app. None if not found
+                - [2] the confidence level from panel app. None if not found
+                - [3] `panel` from args
         """
         try:
             all_genes = panel.get_gene_map()
@@ -110,8 +149,7 @@ class TierUpRunner():
             # - the gene has been dropped from the panel 
             return None, None
 
-    def tierup_record(self, event, hgnc, confidence, panel):
-        # TODO: Build from a dictionary/json schema
+    def _tierup_record(self, event, hgnc, confidence, panel):
         record = {
             'justification': event.data['eventJustification'],
             'consequences': str([ cons['name'] for cons in event.data['variantConsequences'] ]),
@@ -160,15 +198,24 @@ class TierUpRunner():
         return record
 
 class TierUpCSVWriter():
-    def __init__(self, outfile, schema=report_schema, writer=csv.DictWriter):
+    """Write TierUp report to csv file.
+
+    Args:
+        outfile: Output file path
+        schema: A jsonschema for the tierup records. Used to build header and validate input.
+        writer: An object that follows the ``csv.DictWriter`` api
+    """
+    def __init__(self, outfile: str, schema:dict, writer=csv.DictWriter):
         self.outstream = open(outfile, 'w')
         self.header = json.loads(schema)['required']
         self.writer = writer(self.outstream, fieldnames=self.header)
         self.writer.writeheader()
 
     def write(self, data):
+        """Write data to csv output file"""
         self.writer.writerow(data)
     
     def close_file(self):
+        """Close csv output file"""
         self.outstream.close()
 

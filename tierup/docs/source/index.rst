@@ -5,8 +5,11 @@ jellypy-tierup
    :maxdepth: 2
    :caption: Contents:
 
-   guides.rst
-   api.rst
+   quickstart
+   readme
+   guides
+   changelog
+   jellypy.tierup
 
 Indices and tables
 ==================
