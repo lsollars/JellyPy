@@ -9,7 +9,7 @@ setup(
     license="TBC",
     url='https://github.com/NHS-NGS/JellyPy',
     packages=find_packages(),
-    package_data={'':['*.schema']},
+    package_data={'':['data/*.schema']},
     install_requires=[
         'click==7.0',
         'jsonschema==3.2.0',
