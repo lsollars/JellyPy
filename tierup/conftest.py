@@ -7,12 +7,11 @@ def read_config(ini_path):
     config.read(ini_path)
     return config
     
-
 def pytest_addoption(parser):
     parser.addoption(
         "--jpconfig", action="store", type=read_config, help="JellyPy config ini file"
     )
 
 @pytest.fixture
-def jellypy_config(request):
+def jpconfig(request):
     return request.config.getoption("--jpconfig")
