@@ -6,6 +6,7 @@ jellypy-tierup
    :caption: Contents:
 
    guides.rst
+   development.rst
    api.rst
 
 Indices and tables
