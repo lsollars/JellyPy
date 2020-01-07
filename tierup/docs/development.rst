@@ -1,7 +1,7 @@
 Development
 ===========
 
-Testing
+Setup
 -------
 
 Install developer tools:
@@ -19,6 +19,18 @@ test_irversion = 1
 The test config resembles the jellypy config with additional arguments:
 * `test_irid` - An interpretation request id to use when testing downloads. See `test/test_requests.py`
 * `test_irversion` - An interpretation request version to use when testing downloads. See `test/test_requests.py`
+
+
+Running Tests
+-------------
+
+Run all tests in the directory:
+`pytest tierup/test --jpconfig=path_to_your_test_config.ini`
+
+Tests have been separated into files with the following rationale:
+* test_requests.py - These tests call the GeL CIPAPI. Users must be on the NHS Health and Social Care Network for these requests to work.
+* test_modules.py - Test various objects in the tierup library
+* test_tierup.py - Test the application using a local json file
 
 Documentation
 -------------
