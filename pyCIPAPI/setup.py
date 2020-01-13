@@ -5,10 +5,10 @@ setup(
     version='0.1.0',
     author="NHS Bioinformatics Group",
     author_email="joowook.ahn@nhs.net",
-    description='Python library for access the GELs CPI API',
-    license="TBC",
-    url='https://github.com/NHS-NGS/JellyPy',
+    description='Python client library the Genomics England CIPAPI',
+    url='https://github.com/NHS-NGS/JellyPy/pyCIPAPI',
     packages=find_packages(),
+    python_requires='>=3.6.*',
     install_requires=[
         'docopt == 0.6.2',
         'GelReportModels == 7.2.10',
