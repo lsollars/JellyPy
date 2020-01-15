@@ -13,7 +13,9 @@ setup(
     install_requires=[
         'click==7.0',
         'jsonschema==3.2.0',
-        'jellypy-pyCIPAPI @ git+https://github.com/NHS-NGS/JellyPy.git@0.1.0-tierup.1#subdirectory=pyCIPAPI&egg=jellypy-pyCIPAPI'
+    ],
+    dependency_links=[
+        'https://test.pypi.org/project/jellypy-pyCIPAPI/0.1.0/'
     ],
     entry_points = {
         'console_scripts': 'tierup=jellypy.tierup.interface:cli'
