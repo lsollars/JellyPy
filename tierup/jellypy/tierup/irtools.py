@@ -25,9 +25,15 @@ class IRJValidator():
         pass
     
     def validate(self, irjson):
-        is_v6 = self.is_v6(irjson)
-        is_sent = self.is_sent(irjson)
-        is_unsolved = self.is_unsolved(irjson)
+        try:
+            is_v6 = self.is_v6(irjson)
+            is_sent = self.is_sent(irjson)
+            is_unsolved = self.is_unsolved(irjson)
+        except KeyError:
+            # An expected key is missing from the JSON.
+            raise ValueError(f'Invalid interpretation request JSON: An expected key is missing. ' 
+                'Is this a v6 JSON?'
+            )
 
         if is_v6 and is_sent and is_unsolved:
             pass
@@ -38,10 +44,7 @@ class IRJValidator():
     def is_v6(self, irjson):
         """Returns true if the interpreted genome of an irjson is GeL v6 model.
         Despite using the report_v6 argument, older interpretation requests are not returned with this schema."""
-        try:
-            irj_genome = irjson['interpreted_genome'][0]['interpreted_genome_data']
-        except KeyError:
-            return False
+        irj_genome = irjson['interpreted_genome'][0]['interpreted_genome_data']
         ir_factory = GenericFactoryAvro.get_factory_avro(InterpretedGenome, version=VERSION_500)
         ir_factory_instance = ir_factory()
         return ir_factory_instance.validate(irj_genome)
@@ -51,8 +54,7 @@ class IRJValidator():
         Requests are given this status once all QC checks are passed and decision support service
         has processed data.
         """
-        is_sent = 'sent_to_gmcs' in [item['status'] for item in irjson['status']]
-        return is_sent
+        return 'sent_to_gmcs' in [item['status'] for item in irjson['status']]
     
     def is_unsolved(self, irjson):
         """Returns True if no reports have been issued where the case has been solved."""
