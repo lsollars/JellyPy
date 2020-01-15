@@ -31,7 +31,7 @@ def set_irj_object(irjson, irid, irversion, config):
                 'password': config.get('pyCIPAPI', 'password')
             }
         )
-        irjio = IRJIO.get(irid, irversion, sess)
+        irjo = IRJIO.get(irid, irversion, sess)
     else:
         raise Exception('Invalid argument')
     return irjo
