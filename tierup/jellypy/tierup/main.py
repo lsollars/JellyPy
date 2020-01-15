@@ -3,7 +3,6 @@ import json
 import logging
 import pathlib
 
-from jellypy.tierup.logger import log_setup
 from jellypy.tierup import lib
 from jellypy.tierup import interface
 from jellypy.pyCIPAPI.auth import AuthenticatedCIPAPISession
@@ -15,8 +14,10 @@ def main(config, irid, irversion, irjson, outdir):
     logger.info('App start')
     irjo = set_irj_object(irjson, irid, irversion, config)
     records = run_tierup(irjo)
-    outfile = pathlib.Path(outdir or "", irjo.irid + ".tierup.csv")
+    outfile = pathlib.Path(outdir, irjo.irid + ".tierup.csv")
     write_csv(records, outfile)
+    if not irjson:
+        IRJIO.save(irjo, outdir=outdir)
     logger.info('App end')
 
 def set_irj_object(irjson, irid, irversion, config):

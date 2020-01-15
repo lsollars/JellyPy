@@ -1,6 +1,9 @@
 """Utilities for handling interpretation request data."""
 import json
 import pathlib
+import logging
+import pathlib
+
 import re
 from collections import Counter
 
@@ -13,6 +16,7 @@ from protocols.reports_6_0_1 import InterpretedGenome
 from protocols.util.dependency_manager import VERSION_500
 from protocols.util.factories.avro_factory import GenericFactoryAvro
 
+logger = logging.getLogger(__name__)
 
 class IRJValidator():
     """Interpretation request Json V6. Utility methods for interacting with data structure."""
@@ -153,8 +157,10 @@ class IRJIO():
             return IRJson(json.load(f))
 
     @classmethod
-    def save(cls, irjson: IRJson, filepath: str = None):
+    def save(cls, irjson: IRJson, filename: str = None, outdir: str = ""):
         """Save IRJson to disk"""
-        _fp = filepath or irjson.irid + '.json'
-        with open(_fp, 'w') as f:
+        _fn = filename or irjson.irid + '.json'
+        outpath = pathlib.Path(outdir, _fn)
+        logger.info(f'Saving IRJson to {outpath}')
+        with open(outpath, 'w') as f:
             json.dump(irjson.json, f)
