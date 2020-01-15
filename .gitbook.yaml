@@ -1,8 +1,7 @@
-root: ./
-​
-​structure:  
-    readme: README.md  
-    pycipapi: docs/pyCIPAPI/readme.md​
-    
-redirects:  
-    previous/page: new-folder/page.md
+--- 
+root: ./docs
+​structure: 
+  summary: summary.md
+  readme: ./readme.md
+
+  
