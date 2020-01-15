@@ -37,6 +37,6 @@ def parse_config(ctx, param, value):
     "-o", "--outdir", type=click.Path(), help="Output directory for tierup files", default=None
 )
 def cli(config, irid, irversion, irjson, outdir):
-    logger.info('CLI args: {irid}, {irversion}, {irjson}, {config}, {outdir}')
+    logger.info(f'CLI args: {irid}, {irversion}, {irjson}, {config}, {outdir}')
     main(config, irid, irversion, irjson, outdir)
 
