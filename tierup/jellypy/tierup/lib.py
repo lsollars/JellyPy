@@ -11,9 +11,6 @@ from jellypy.tierup.panelapp import PanelApp
 
 logger = logging.getLogger(__name__)
 
-report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
-summary_report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/summary_report.schema')
-
 
 class ReportEvent():
     def __init__(self, event, variant):
@@ -160,12 +157,11 @@ class TierUpRunner():
         }
         return record
 
-class TierUpCSVWriter():
-    def __init__(self, outfile, schema=report_schema, writer=csv.DictWriter):
+class TierUpWriter():
+    def __init__(self, outfile, schema, writer=csv.DictWriter):
         self.outstream = open(outfile, 'w')
         self.header = json.loads(schema)['required']
-        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")
-        self.writer.writeheader()
+        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")   
 
     def write(self, data):
         self.writer.writerow(data)
@@ -173,18 +169,22 @@ class TierUpCSVWriter():
     def close_file(self):
         self.outstream.close()
 
-class TierUpSummaryWriter():
-    def __init__(self, outfile, schema=summary_report_schema, writer=csv.DictWriter):
-        self.outstream = open(outfile, 'w')
-        self.header = json.loads(schema)['required']
-        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")
+class TierUpCSVWriter(TierUpWriter):
 
-    def _filter(self, data):
-        return { k:v for k,v in data.items() if k in self.header }
+    schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
+
+    def __init__(self, *args, **kwargs):
+        super(TierUpCSVWriter, self).__init__(*args, schema=self.schema, **kwargs)
+        self.writer.writeheader()
+
+class TierUpSummaryWriter(TierUpWriter):
+
+    schema = pkg_resources.resource_string('jellypy.tierup', 'data/summary_report.schema')
+
+    def __init__(self, *args, **kwargs):
+        super(TierUpSummaryWriter, self).__init__(*args, schema=self.schema, **kwargs)
 
     def write(self, data):
         if data['pa_confidence'] and data['pa_confidence'] in ['3','4']:
-            self.writer.writerow(self._filter(data))
-    
-    def close_file(self):
-        self.outstream.close()
+            filtered = { k:v for k,v in data.items() if k in self.header }
+            self.writer.writerow(filtered)

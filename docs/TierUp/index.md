@@ -22,5 +22,5 @@ password = your_password
 
 ## Output files
 
-* interpretation.summary.tab - A tab-delimited summary file listing Tiered-Up variants
-* interpretation.tierup.csv - A csv file containing the full tierup output
+* interpretation.tierup.summary - A tab-delimited summary file listing Tiered-Up variants only
+* interpretation.tierup.csv - A csv file containing the full output for all Tier 3 variants anlaysed
