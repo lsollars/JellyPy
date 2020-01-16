@@ -12,6 +12,7 @@ from jellypy.tierup.panelapp import PanelApp
 logger = logging.getLogger(__name__)
 
 report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
+summary_report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/summary_report.schema')
 
 
 class ReportEvent():
@@ -163,7 +164,7 @@ class TierUpCSVWriter():
     def __init__(self, outfile, schema=report_schema, writer=csv.DictWriter):
         self.outstream = open(outfile, 'w')
         self.header = json.loads(schema)['required']
-        self.writer = writer(self.outstream, fieldnames=self.header)
+        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")
         self.writer.writeheader()
 
     def write(self, data):
@@ -172,3 +173,18 @@ class TierUpCSVWriter():
     def close_file(self):
         self.outstream.close()
 
+class TierUpSummaryWriter():
+    def __init__(self, outfile, schema=summary_report_schema, writer=csv.DictWriter):
+        self.outstream = open(outfile, 'w')
+        self.header = json.loads(schema)['required']
+        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")
+
+    def _filter(self, data):
+        return { k:v for k,v in data.items() if k in self.header }
+
+    def write(self, data):
+        if data['pa_confidence'] and data['pa_confidence'] in ['3','4']:
+            self.writer.writerow(self._filter(data))
+    
+    def close_file(self):
+        self.outstream.close()

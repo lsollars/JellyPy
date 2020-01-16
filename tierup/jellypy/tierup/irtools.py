@@ -16,6 +16,7 @@ from protocols.reports_6_0_1 import InterpretedGenome
 from protocols.util.dependency_manager import VERSION_500
 from protocols.util.factories.avro_factory import GenericFactoryAvro
 
+
 logger = logging.getLogger(__name__)
 
 class IRJValidator():
@@ -108,7 +109,7 @@ class IRJson():
                 panel = pa.GeLPanel(item['panelName'])
                 _panels[panel.name] = panel
             except requests.HTTPError:
-                print(f'Warning. No PanelApp API reponse for {item["panelName"]}')
+                logger.warning(f'Warning. No PanelApp API reponse for {item}')
         return _panels
 
     def _get_tiering_counts(self):
@@ -163,6 +164,5 @@ class IRJIO():
         """Save IRJson to disk"""
         _fn = filename or irjson.irid + '.json'
         outpath = pathlib.Path(outdir, _fn)
-        logger.info(f'Saving IRJson to {outpath}')
         with open(outpath, 'w') as f:
             json.dump(irjson.json, f)
