@@ -204,20 +204,9 @@ class IRJIO():
             return IRJson(json.load(f))
 
     @classmethod
-<<<<<<< HEAD
-    def save(cls, irjson: IRJson, filepath: str = None) -> None:
-        """Save an interpertation request json to a file
-        
-        Args:
-            irjson: An IRJson object to save
-            filepath: Path to write interpretation request json file"""
-        _fp = filepath or irjson.irid + '.json'
-        with open(_fp, 'w') as f:
-=======
     def save(cls, irjson: IRJson, filename: str = None, outdir: str = ""):
         """Save IRJson to disk"""
         _fn = filename or irjson.irid + '.json'
         outpath = pathlib.Path(outdir, _fn)
         with open(outpath, 'w') as f:
->>>>>>> abb28945e042eac8dbc6e3c69615e53b85713335
             json.dump(irjson.json, f)
