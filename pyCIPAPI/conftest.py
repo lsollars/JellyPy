@@ -14,5 +14,5 @@ def pytest_addoption(parser):
     )
 
 @pytest.fixture
-def jellypy_config(request):
+def jpconfig(request):
     return request.config.getoption("--jpconfig")

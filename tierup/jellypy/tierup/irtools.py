@@ -1,6 +1,9 @@
 """Utilities for handling interpretation request data."""
 import json
 import pathlib
+import logging
+import pathlib
+
 import re
 from collections import Counter
 
@@ -14,6 +17,8 @@ from protocols.util.dependency_manager import VERSION_500
 from protocols.util.factories.avro_factory import GenericFactoryAvro
 
 
+logger = logging.getLogger(__name__)
+
 class IRJValidator():
     """Validate interpretation request json data for TierUp reanalysis.
     """
@@ -21,7 +26,7 @@ class IRJValidator():
     def __init__(self):
         pass
     
-    def validate(self, irjson: dict) -> None:
+    def validate(self, irjson):
         """Validate interpretation request data for TierUp reanalysis.
         Calls boolean methods to validate the interpretation request data.
         
@@ -29,10 +34,17 @@ class IRJValidator():
             irjson: Interpretation request data in json format.
         Raises:
             IOError: Raised if any validation functions return False
+            KeyError: Raised if any expected keys are missing from the JSON object
         """
-        is_v6 = self.is_v6(irjson)
-        is_sent = self.is_sent(irjson)
-        is_unsolved = self.is_unsolved(irjson)
+        try:
+            is_v6 = self.is_v6(irjson)
+            is_sent = self.is_sent(irjson)
+            is_unsolved = self.is_unsolved(irjson)
+        except KeyError:
+            # An expected key is missing from the JSON.
+            raise ValueError(f'Invalid interpretation request JSON: An expected key is missing. ' 
+                'Is this a v6 JSON?'
+            )
 
         if is_v6 and is_sent and is_unsolved:
             pass
@@ -48,10 +60,7 @@ class IRJValidator():
         Args:
             irjson: Interpretation request data in json format.
         """
-        try:
-            irj_genome = irjson['interpreted_genome'][0]['interpreted_genome_data']
-        except KeyError:
-            return False
+        irj_genome = irjson['interpreted_genome'][0]['interpreted_genome_data']
         ir_factory = GenericFactoryAvro.get_factory_avro(InterpretedGenome, version=VERSION_500)
         ir_factory_instance = ir_factory()
         return ir_factory_instance.validate(irj_genome)
@@ -64,8 +73,7 @@ class IRJValidator():
         Args:
             irjson: Interpretation request data in json format.
         """
-        is_sent = 'sent_to_gmcs' in [item['status'] for item in irjson['status']]
-        return is_sent
+        return 'sent_to_gmcs' in [item['status'] for item in irjson['status']]
     
     @staticmethod
     def is_unsolved(irjson: dict) -> bool:
@@ -139,7 +147,7 @@ class IRJson():
                 panel = pa.GeLPanel(item['panelName'])
                 _panels[panel.name] = panel
             except requests.HTTPError:
-                print(f'Warning. No PanelApp API reponse for {item["panelName"]}')
+                logger.warning(f'Warning. No PanelApp API reponse for {item}')
         return _panels
 
     def _get_tiering_counts(self):
@@ -196,6 +204,7 @@ class IRJIO():
             return IRJson(json.load(f))
 
     @classmethod
+<<<<<<< HEAD
     def save(cls, irjson: IRJson, filepath: str = None) -> None:
         """Save an interpertation request json to a file
         
@@ -204,4 +213,11 @@ class IRJIO():
             filepath: Path to write interpretation request json file"""
         _fp = filepath or irjson.irid + '.json'
         with open(_fp, 'w') as f:
+=======
+    def save(cls, irjson: IRJson, filename: str = None, outdir: str = ""):
+        """Save IRJson to disk"""
+        _fn = filename or irjson.irid + '.json'
+        outpath = pathlib.Path(outdir, _fn)
+        with open(outpath, 'w') as f:
+>>>>>>> abb28945e042eac8dbc6e3c69615e53b85713335
             json.dump(irjson.json, f)

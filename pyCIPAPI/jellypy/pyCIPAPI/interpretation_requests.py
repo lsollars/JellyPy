@@ -9,7 +9,7 @@ from time import strptime
 from .auth import AuthenticatedCIPAPISession
 from .config import beta_testing_base_url, live_100k_data_base_url
 
-def get_interpretation_request_json(ir_id, ir_version, reports_v6=False, testing_on=False, token=None, session=None):
+def get_interpretation_request_json(ir_id, ir_version, reports_v6=True, testing_on=False, token=None, session=None):
     """Get an interpretation request as a json."""
     s = session if session else AuthenticatedCIPAPISession(testing_on=testing_on, token=token)
     payload = {

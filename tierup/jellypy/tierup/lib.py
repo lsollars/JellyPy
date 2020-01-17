@@ -11,8 +11,6 @@ from jellypy.tierup.panelapp import PanelApp
 
 logger = logging.getLogger(__name__)
 
-report_schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
-
 
 class ReportEvent():
     """Represents a tiering report event.
@@ -197,19 +195,11 @@ class TierUpRunner():
         }
         return record
 
-class TierUpCSVWriter():
-    """Write TierUp report to csv file.
-
-    Args:
-        outfile: Output file path
-        schema: A jsonschema for the tierup records. Used to build header and validate input.
-        writer: An object that follows the ``csv.DictWriter`` api
-    """
-    def __init__(self, outfile: str, schema:dict, writer=csv.DictWriter):
+class TierUpWriter():
+    def __init__(self, outfile, schema, writer=csv.DictWriter):
         self.outstream = open(outfile, 'w')
         self.header = json.loads(schema)['required']
-        self.writer = writer(self.outstream, fieldnames=self.header)
-        self.writer.writeheader()
+        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")   
 
     def write(self, data):
         """Write data to csv output file"""
@@ -219,3 +209,22 @@ class TierUpCSVWriter():
         """Close csv output file"""
         self.outstream.close()
 
+class TierUpCSVWriter(TierUpWriter):
+
+    schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
+
+    def __init__(self, *args, **kwargs):
+        super(TierUpCSVWriter, self).__init__(*args, schema=self.schema, **kwargs)
+        self.writer.writeheader()
+
+class TierUpSummaryWriter(TierUpWriter):
+
+    schema = pkg_resources.resource_string('jellypy.tierup', 'data/summary_report.schema')
+
+    def __init__(self, *args, **kwargs):
+        super(TierUpSummaryWriter, self).__init__(*args, schema=self.schema, **kwargs)
+
+    def write(self, data):
+        if data['pa_confidence'] and data['pa_confidence'] in ['3','4']:
+            filtered = { k:v for k,v in data.items() if k in self.header }
+            self.writer.writerow(filtered)

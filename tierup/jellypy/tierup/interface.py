@@ -43,10 +43,9 @@ def parse_config(ctx: click.Context, param, value) -> configparser.ConfigParser:
     "-j", "--irjson", type=click.Path(exists=True), help="GeL interpretation request json file. E.g. data/1234.json"
 )
 @click.option(
-    "-o", "--outdir", type=click.Path(), help="Output directory for tierup files", default=None
+    "-o", "--outdir", type=click.Path(), help="Output directory for tierup files", default=""
 )
 def cli(config, irid, irversion, irjson, outdir):
-    """Command line interface"""
-    logger.info('CLI args: {irid}, {irversion}, {irjson}, {config}, {outdir}')
+    logger.info(f'CLI args: {irid}, {irversion}, {irjson}, {config}, {outdir}')
     main(config, irid, irversion, irjson, outdir)
 
