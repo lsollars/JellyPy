@@ -5,7 +5,7 @@ README = ( pathlib.Path(__file__).parent / 'readme.md').read_text()
 
 setup(
     name='jellypy_tierup',
-    version='0.1.0',
+    version='0.1.1',
     author="NHS Bioinformatics Group",
     author_email="nana.mensah1@nhs.net",
     description='Find GeL Tier 3 variants with Green PanelApp genes',
