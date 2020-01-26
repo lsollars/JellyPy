@@ -86,7 +86,7 @@ class IRJson():
         self.updated_panels = []
     
     def __str__(self):
-        return f'{self.__class__}:{self.irid}'
+        return f'{self.irid}'
 
     def _get_tiering(self):
         tiering_list = list(

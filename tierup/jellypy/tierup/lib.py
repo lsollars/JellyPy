@@ -159,9 +159,10 @@ class TierUpRunner():
 
 class TierUpWriter():
     def __init__(self, outfile, schema, writer=csv.DictWriter):
+        self.outfile = outfile
         self.outstream = open(outfile, 'w')
         self.header = json.loads(schema)['required']
-        self.writer = writer(self.outstream, fieldnames=self.header, delimiter=",")   
+        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")   
 
     def write(self, data):
         self.writer.writerow(data)

@@ -15,10 +15,10 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 def parse_config(ctx, param, value):
-    """Click callback to return config.ini as dictionary."""
+    """Click callback to return config filename and config as dictionary."""
     config = configparser.ConfigParser()
     config.read(value)
-    return config
+    return (value, config)
 
 @click.command()
 @click.option(
@@ -39,6 +39,6 @@ def parse_config(ctx, param, value):
 )
 def cli(config, irid, irversion, irjson, outdir):
     """Command line interface."""
-    logger.info(f'CLI args: {config}, {irid}, {irversion}, {irjson}, {outdir}')
-    main(config, irid, irversion, irjson, outdir)
+    logger.info(f'CLI args: {config[0]}, {irid}, {irversion}, {irjson}, {outdir}')
+    main(config[1], irid, irversion, irjson, outdir)
 
