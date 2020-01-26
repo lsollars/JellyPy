@@ -68,19 +68,19 @@ class PanelUpdater():
 
 class TierUpRunner():
 
-    def __init__(self, irjo):
-        self.irjo = irjo
+    def __init__(self):
+        pass
 
-    def run(self):
-        tier_three_events = self.generate_events()
+    def run(self, irjo):
+        tier_three_events = self.generate_events(irjo)
         for event in tier_three_events:
-            panel = self.irjo.panels[event.panelname]
+            panel = irjo.panels[event.panelname]
             hgnc, conf = self.query_panel_app(event.gene, panel)
-            record = self.tierup_record(event, hgnc, conf, panel)
+            record = self.tierup_record(event, hgnc, conf, panel, irjo)
             yield record
 
-    def generate_events(self):
-        for variant in self.irjo.tiering['interpreted_genome_data']['variants']:
+    def generate_events(self, irjo):
+        for variant in irjo.tiering['interpreted_genome_data']['variants']:
             for event in variant['reportEvents']:
                 if event['tier'] == 'TIER3':
                     yield ReportEvent(event, variant)
@@ -108,7 +108,7 @@ class TierUpRunner():
             # - the gene has been dropped from the panel 
             return None, None
 
-    def tierup_record(self, event, hgnc, confidence, panel):
+    def tierup_record(self, event, hgnc, confidence, panel, irjo):
         # TODO: Build from a dictionary/json schema
         record = {
             'justification': event.data['eventJustification'],
@@ -117,9 +117,9 @@ class TierUpRunner():
             'denovo_score': event.data['deNovoQualityScore'],
             'score': event.data['score'],
             'event_id': event.data['reportEventId'],
-            'interpretation_request_id': self.irjo.tiering['interpreted_genome_data']['interpretationRequestId'],
+            'interpretation_request_id': irjo.tiering['interpreted_genome_data']['interpretationRequestId'],
             'gel_tiering_version' : None, #TODO: Extract tiering version from softwareVersions key
-            'created_at': self.irjo.tiering['created_at'],
+            'created_at': irjo.tiering['created_at'],
             'tier': event.data['tier'],
             'segregation': event.data['segregationPattern'],
             'inheritance': event.data['modeOfInheritance'],
@@ -147,13 +147,13 @@ class TierUpRunner():
             'pa_gene': event.gene,
             'pa_confidence': confidence,
             'tu_comment': "No comment implemented",
-            'software_versions': str(self.irjo.tiering['interpreted_genome_data']['softwareVersions']),
-            'reference_db_versions': str(self.irjo.tiering['interpreted_genome_data']['referenceDatabasesVersions']),
-            'extra_panels': self.irjo.updated_panels,
+            'software_versions': str(irjo.tiering['interpreted_genome_data']['softwareVersions']),
+            'reference_db_versions': str(irjo.tiering['interpreted_genome_data']['referenceDatabasesVersions']),
+            'extra_panels': irjo.updated_panels,
             'tu_run_time': datetime.datetime.now().strftime('%c'),
-            'tier1_count': self.irjo.tier_counts['TIER1'],
-            'tier2_count': self.irjo.tier_counts['TIER2'],
-            'tier3_count': self.irjo.tier_counts['TIER3']
+            'tier1_count': irjo.tier_counts['TIER1'],
+            'tier2_count': irjo.tier_counts['TIER2'],
+            'tier3_count': irjo.tier_counts['TIER3']
         }
         return record
 
@@ -161,7 +161,7 @@ class TierUpWriter():
     def __init__(self, outfile, schema, writer=csv.DictWriter):
         self.outstream = open(outfile, 'w')
         self.header = json.loads(schema)['required']
-        self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")   
+        self.writer = writer(self.outstream, fieldnames=self.header, delimiter=",")   
 
     def write(self, data):
         self.writer.writerow(data)

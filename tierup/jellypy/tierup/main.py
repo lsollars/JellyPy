@@ -28,40 +28,40 @@ def set_irj_object(irjson, irid, irversion, config):
         raise Exception('Invalid argument')
     return irjo
 
-def run_tierup(irjo: IRJson):
-    # IRJ contains panels as they are named today but report events contain legacy panel names.
-    #    Search for panel name mismatches and add under the relevant panel ID today.
-    logger.info('Searching for merged PanelApp panels')
-    lib.PanelUpdater().add_event_panels(irjo)
-
-    logger.info(f'Running TierUp for {irjo}')
-    # Run Tierup on T3 variants in irjo
-    # TODO: Accept irjo to run so tierup can be passed multiple inputs.
-    tierup = lib.TierUpRunner(irjo)
-    records = tierup.run()
-    return records
-
 def main(config, irid, irversion, irjson, outdir):
-    logger.info('App start.')
-    
+    """Call TierUp and write results to output directory.
+
+    Args:
+        config(dict): A config parser config object parsed from a jellypy config.ini
+        irid(int): Interpretation request id e.g. 1234
+        irversion(int): Interpretation request version e.g. 1
+        irjson(dict): An interpretation request json file from the CIPAPI
+        outdir(str): Output directory for tierup results
+    """
+    pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
     irjo = set_irj_object(irjson, irid, irversion, config)
     if not irjson:
         logger.info(f'Saving IRJson to output directory.')
         IRJIO.save(irjo, outdir=outdir)
 
-    logger.info(f'Running tierup.')
-    records = run_tierup(irjo)
+    logger.info('Searching for merged PanelApp panels')
+    lib.PanelUpdater().add_event_panels(irjo)
+
+    logger.info(f'Running tierup for {irjo}')
+    records = lib.TierUpRunner().run(irjo)
     
-    logger.info(f'Writing results.')
+    logger.info(f'Writing results')
     csv_writer = lib.TierUpCSVWriter(outfile=pathlib.Path(outdir, irjo.irid + ".tierup.csv"))
-    summary_writer = lib.TierUpSummaryWriter(outfile=pathlib.Path(outdir, irjo.irid + ".tierup.summary"))
+    summary_writer = lib.TierUpSummaryWriter(outfile=pathlib.Path(outdir, irjo.irid + ".tierup.summary.tab"))
+
     for record in records: # Records is a generator exhausted in one loop.
         csv_writer.write(record)
         summary_writer.write(record)
+
     csv_writer.close_file()
     summary_writer.close_file()
 
-    logger.info('App end.')
+    logger.info('END')
 
 if __name__ == "__main__":
     interface.cli()

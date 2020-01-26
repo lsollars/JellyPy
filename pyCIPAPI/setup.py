@@ -24,7 +24,7 @@ setup(
         'openpyxl == 2.6.3'
     ],
     classifiers=[
-        "Programming Language :: Python :: 3.7"
+        "Programming Language :: Python :: 3.6"
     ],
     include_package_data=True
 )

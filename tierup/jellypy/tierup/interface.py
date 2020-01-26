@@ -15,6 +15,7 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 def parse_config(ctx, param, value):
+    """Click callback to return config.ini as dictionary."""
     config = configparser.ConfigParser()
     config.read(value)
     return config
@@ -37,6 +38,7 @@ def parse_config(ctx, param, value):
     "-o", "--outdir", type=click.Path(), help="Output directory for tierup files", default=""
 )
 def cli(config, irid, irversion, irjson, outdir):
-    logger.info(f'CLI args: {irid}, {irversion}, {irjson}, {config}, {outdir}')
+    """Command line interface."""
+    logger.info(f'CLI args: {config}, {irid}, {irversion}, {irjson}, {outdir}')
     main(config, irid, irversion, irjson, outdir)
 
