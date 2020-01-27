@@ -3,7 +3,7 @@ import logging
 from logging.config import dictConfig
 
 
-def log_setup(syslog="/dev/log"):
+def log_setup():
     """
     """
     logging_config = dict(
@@ -21,14 +21,8 @@ def log_setup(syslog="/dev/log"):
                 "formatter": "log_formatter",
                 "level": logging.DEBUG,
             },
-            "syslog_handler": {
-                "class": "logging.handlers.SysLogHandler",
-                "formatter": "log_formatter",
-                "level": logging.DEBUG,
-                "address": syslog,
-            },
         },
-        root={"handlers": ["stream_handler", "syslog_handler"], "level": logging.DEBUG},
+        root={"handlers": ["stream_handler"], "level": logging.DEBUG},
         disable_existing_loggers=False
     )
     dictConfig(logging_config)

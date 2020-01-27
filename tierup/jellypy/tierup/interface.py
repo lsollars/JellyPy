@@ -15,7 +15,7 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 def parse_config(ctx: click.Context, param, value) -> configparser.ConfigParser:
-    """A callback for parsing the tierup config file passed to click.
+    """Click callback to return config filename and config as dictionary
     
     Args:
         ctx: Click context
@@ -26,7 +26,7 @@ def parse_config(ctx: click.Context, param, value) -> configparser.ConfigParser:
     """
     config = configparser.ConfigParser()
     config.read(value)
-    return config
+    return (value, config)
 
 @click.command()
 @click.option(
@@ -46,6 +46,7 @@ def parse_config(ctx: click.Context, param, value) -> configparser.ConfigParser:
     "-o", "--outdir", type=click.Path(), help="Output directory for tierup files", default=""
 )
 def cli(config, irid, irversion, irjson, outdir):
-    logger.info(f'CLI args: {irid}, {irversion}, {irjson}, {config}, {outdir}')
-    main(config, irid, irversion, irjson, outdir)
+    """Command line interface."""
+    logger.info(f'CLI args: {config[0]}, {irid}, {irversion}, {irjson}, {outdir}')
+    main(config[1], irid, irversion, irjson, outdir)
 

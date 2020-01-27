@@ -96,30 +96,21 @@ class PanelUpdater():
         return event_panels - ir_panels
 
 class TierUpRunner():
-    """Run TierUp on an interpretation request json object
+    """Run TierUp on an interpretation request json object"""
 
-    Args:
-        irjo: Interpretation request json object
-    """
+    def __init__(self):
+        pass
 
-    def __init__(self, irjo:IRJson):
-        self.irjo = irjo
-
-    def run(self):
-        """Run tierup algorithm
-
-        Returns:
-            Generator containing tierup CSV results for each tier 3 variant
-        """
-        tier_three_events = self._generate_events()
+    def run(self, irjo):
+        tier_three_events = self.generate_events(irjo)
         for event in tier_three_events:
-            panel = self.irjo.panels[event.panelname]
+            panel = irjo.panels[event.panelname]
             hgnc, conf = self.query_panel_app(event.gene, panel)
-            record = self._tierup_record(event, hgnc, conf, panel)
+            record = self.tierup_record(event, hgnc, conf, panel, irjo)
             yield record
 
-    def _generate_events(self):
-        for variant in self.irjo.tiering['interpreted_genome_data']['variants']:
+    def generate_events(self, irjo):
+        for variant in irjo.tiering['interpreted_genome_data']['variants']:
             for event in variant['reportEvents']:
                 if event['tier'] == 'TIER3':
                     yield ReportEvent(event, variant)
@@ -147,7 +138,8 @@ class TierUpRunner():
             # - the gene has been dropped from the panel 
             return None, None
 
-    def _tierup_record(self, event, hgnc, confidence, panel):
+    def tierup_record(self, event, hgnc, confidence, panel, irjo):
+        # TODO: Build from a dictionary/json schema
         record = {
             'justification': event.data['eventJustification'],
             'consequences': str([ cons['name'] for cons in event.data['variantConsequences'] ]),
@@ -155,9 +147,9 @@ class TierUpRunner():
             'denovo_score': event.data['deNovoQualityScore'],
             'score': event.data['score'],
             'event_id': event.data['reportEventId'],
-            'interpretation_request_id': self.irjo.tiering['interpreted_genome_data']['interpretationRequestId'],
+            'interpretation_request_id': irjo.tiering['interpreted_genome_data']['interpretationRequestId'],
             'gel_tiering_version' : None, #TODO: Extract tiering version from softwareVersions key
-            'created_at': self.irjo.tiering['created_at'],
+            'created_at': irjo.tiering['created_at'],
             'tier': event.data['tier'],
             'segregation': event.data['segregationPattern'],
             'inheritance': event.data['modeOfInheritance'],
@@ -185,18 +177,19 @@ class TierUpRunner():
             'pa_gene': event.gene,
             'pa_confidence': confidence,
             'tu_comment': "No comment implemented",
-            'software_versions': str(self.irjo.tiering['interpreted_genome_data']['softwareVersions']),
-            'reference_db_versions': str(self.irjo.tiering['interpreted_genome_data']['referenceDatabasesVersions']),
-            'extra_panels': self.irjo.updated_panels,
+            'software_versions': str(irjo.tiering['interpreted_genome_data']['softwareVersions']),
+            'reference_db_versions': str(irjo.tiering['interpreted_genome_data']['referenceDatabasesVersions']),
+            'extra_panels': irjo.updated_panels,
             'tu_run_time': datetime.datetime.now().strftime('%c'),
-            'tier1_count': self.irjo.tier_counts['TIER1'],
-            'tier2_count': self.irjo.tier_counts['TIER2'],
-            'tier3_count': self.irjo.tier_counts['TIER3']
+            'tier1_count': irjo.tier_counts['TIER1'],
+            'tier2_count': irjo.tier_counts['TIER2'],
+            'tier3_count': irjo.tier_counts['TIER3']
         }
         return record
 
 class TierUpWriter():
     def __init__(self, outfile, schema, writer=csv.DictWriter):
+        self.outfile = outfile
         self.outstream = open(outfile, 'w')
         self.header = json.loads(schema)['required']
         self.writer = writer(self.outstream, fieldnames=self.header, delimiter="\t")   
