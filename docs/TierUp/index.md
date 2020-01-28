@@ -1,26 +1,41 @@
-# TierUp User Guide
+# User Guide
 
-TierUp flags Tier 3 variants in GeL interpretation requests that would update classification if reanalysed today. TierUp checks PanelApp for the confidence level of the Tier 3 variant's gene in the current panel version.
+`tierup` finds Tier 3 variants in GeL cases with PanelApp Green genes.
 
-## Quick-Start
+## Installation
 
-Install tierup (current development version) in an environment with python >=3.6:
-```
-git clone https://github.com/NHS-NGS/JellyPy.git -b 0.1.0-tierup.1
-pip install JellyPy/tierup
-# Run TierUp on interpretation request 1234-1
-tierup -irid 1234 --irversion 1 --config configuration.ini
+```bash
+pip install jellypy-tierup
 ```
 
-### Configuration.ini
-A tierup config file with GeL credentials is required:
-```
-[pyCIPAPI]
-username = your_username
-password = your_password
-```
+## Guides
 
-## Output files
+### Reanalyse Tier 3 variants in a GeL rare disease case
 
-* interpretation.tierup.summary - A tab-delimited summary file listing Tiered-Up variants only
-* interpretation.tierup.csv - A csv file containing the full output for all Tier 3 variants anlaysed
+1. Create a configuration file with CIPAPI details. For example:
+    ```
+    # config.ini
+    [pyCIPAPI]
+    username = your_username
+    password = your_password
+    ```
+
+1. Run tierup
+    For example, interpretation request 1234 version 2 could be analysed with:
+    ```bash
+    tierup --irid 1234 --irversion 1 --config config.ini
+    ```
+
+1. View results
+    * \*.tierup.summary.csv - A list of any tierup (PanelApp Green) variants found
+    * \*.tierup.csv - Complete data from all Tier 3 variants anlaysed
+
+## Constraints
+
+* `tierup` analyses undiagnosed rare disease cases
+* Access to case data from GeL is only possible on the [HSCN](https://digital.nhs.uk/services/health-and-social-care-network)
+* Case data must comply with the GeL v6 interpretation request model
+
+## Support
+
+Please [raise issues](https://github.com/NHS-NGS/JellyPy), message the [#jellypy slack](https://binfx.slack.com/messages) channel or [send an email](mailto:nana.mensah1@nhs.net).
