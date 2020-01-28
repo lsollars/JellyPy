@@ -28,3 +28,4 @@ session = auth.AuthenticatedCIPAPISession(
 # Download interpretation request 12345-1 data in json format.
 irjson = irs.get_interpretation_request_json(12345, 1, session=session, reports_v6=True)
 ```
+
