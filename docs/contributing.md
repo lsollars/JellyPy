@@ -1,16 +1,19 @@
 # Contributing
 
-## Contributing to JellyPy
+## Requesting Features
 
 Please raise an issue to request a new functions or features:
 https://github.com/NHS-NGS/JellyPy/issues
 
 To develop a new function or feature, please take a look at the issues raised. If there's something that you would like to code up, then (you are awesome and) start a discussion in the `#jellypy` channel at https://binfx.slack.com/messages.
 
-## Developer guide
+## Contributing
 
-Setup a development environment on your machine with the following packages:
-* pytest == 5.2.2
+1. Fork it!
+1. Create your feature branch: git checkout -b my-new-feature
+1. Commit your changes: git commit -am 'Add some feature'
+1. Push to the branch: git push origin my-new-feature
+1. Submit a pull request :D
 
 ### Testing
 
