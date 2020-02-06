@@ -1,7 +1,7 @@
 import pathlib
 from setuptools import find_packages, setup
 
-README = "TBD."
+README = ( pathlib.Path(__file__).parent / 'readme.md').read_text()
 
 setup(
     name='jellypy_pyCIPAPI',
