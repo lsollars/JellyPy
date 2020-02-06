@@ -73,7 +73,7 @@ class IRJValidator():
         Args:
             irjson: Interpretation request data in json format.
         """
-        return 'sent_to_gmcs' in [item['status'] for item in irjson['status']]
+        return any('sent_to_gmcs' in [item['status'] for item in irjson['status']])
     
     @staticmethod
     def is_unsolved(irjson: dict) -> bool:
