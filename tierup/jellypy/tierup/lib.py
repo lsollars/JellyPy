@@ -7,13 +7,14 @@ import csv
 from typing import Iterable
 
 from jellypy.tierup.irtools import IRJson, IRJIO
-from jellypy.tierup.panelapp import PanelApp
+from jellypy.tierup.panelapp import PanelApp, GeLPanel
 
 logger = logging.getLogger(__name__)
 
 
 class ReportEvent():
-    """Represents a tiering report event.
+    """Data objects for a GeL tiering report event.
+
     Args:
         event: A report event from the irjson tiering section
         variant: The variant under which the report event is nested in the irjson
@@ -30,18 +31,20 @@ class ReportEvent():
         self.panelname = self.data['genePanel']['panelName']
 
     def _get_gene(self):
+        """Returns the gene symbol from a GeL report event"""
         all_genes = [ entity['geneSymbol'] 
             for entity in self.data['genomicEntities']
             if entity['type'] == 'gene'
         ]
+        # Add sanity check
         assert len(all_genes) == 1, 'More than one report event entity of type gene'
         return all_genes.pop()
 
 class PanelUpdater():
     """Update panel IDs in IRJson object panels.
     
-    Panels applied when tier 3 variants were reported may have different PanelApp IDs today.
-    This class searches PanelApp to update panel identifiers where necessary.
+    Panels applied when tier 3 variants were reported can have different PanelApp IDs today.
+    This class searches PanelApp to update panel identifiers where possible.
     """
     def __init__(self):
         pass
@@ -78,8 +81,8 @@ class PanelUpdater():
         return oldname_id
 
     def _find_missing_event_panels(self, irjo) -> set:
-        """Panel names reported with tiered variants and remove those 
-        missing from the top-level of the interpretation request today.
+        """Find panels reported with variants at the time of tiering but missing from the
+        interpretation request panels listing, which is kept up to date.
 
         Args:
             irjo: An interpretation request json object
@@ -102,6 +105,10 @@ class TierUpRunner():
         pass
 
     def run(self, irjo):
+        """Run TierUp.
+        Args:
+            irjo: Interpretation request json object
+        """
         tier_three_events = self.generate_events(irjo)
         for event in tier_three_events:
             panel = irjo.panels[event.panelname]
@@ -110,24 +117,14 @@ class TierUpRunner():
             yield record
 
     def generate_events(self, irjo):
+        """Return report event objects for all Tier 3 variants"""
         for variant in irjo.tiering['interpreted_genome_data']['variants']:
             for event in variant['reportEvents']:
                 if event['tier'] == 'TIER3':
                     yield ReportEvent(event, variant)
 
-    def query_panel_app(self, gene: str, panel):
-        """Get the hgnc id and confidence level for a gene from the panelapp API.
-        
-        Args:
-            gene: A gene symbol
-            panel: A GeLPanel object
-        Returns:
-            A tuple containing four elements:
-                - [0] `gene` from args
-                - [1] the hgnc id from panel app. None if not found
-                - [2] the confidence level from panel app. None if not found
-                - [3] `panel` from args
-        """
+    def query_panel_app(self, gene: str, panel: GeLPanel):
+        """Get the HGNCID and confidence level for panels in Panel App"""
         try:
             all_genes = panel.get_gene_map()
             hgnc, confidence = all_genes[gene]
@@ -139,7 +136,7 @@ class TierUpRunner():
             return None, None
 
     def tierup_record(self, event, hgnc, confidence, panel, irjo):
-        # TODO: Build from a dictionary/json schema
+        """Return TierUp dict result for a Tier 3 variant"""
         record = {
             'justification': event.data['eventJustification'],
             'consequences': str([ cons['name'] for cons in event.data['variantConsequences'] ]),
@@ -154,8 +151,8 @@ class TierUpRunner():
             'segregation': event.data['segregationPattern'],
             'inheritance': event.data['modeOfInheritance'],
             'group': event.data['groupOfVariants'],
-            'zygosity': event.variant['variantCalls'][0]['zygosity'], #TODO: GET THE PARTICIPANT'S CALL
-            'participant_id': 10000, #TODO: Get from IRJ
+            'zygosity': event.variant['variantCalls'][0]['zygosity'], #TODO: Get participant's call
+            'participant_id': 10000, #TODO: Remove from TierUp report
             'position': event.variant['variantCoordinates']['position'],
             'chromosome': event.variant['variantCoordinates']['chromosome'],
             'assembly': event.variant['variantCoordinates']['assembly'],
@@ -188,6 +185,13 @@ class TierUpRunner():
         return record
 
 class TierUpWriter():
+    """Write TierUp results as CSV file.
+    
+    Args:
+        outfile(str): Output file path
+        schema(str): A json.schema file with output file headers expected in data
+        writer(csv.DictWriter): An object for writing dictionaires as csv data
+    """
     def __init__(self, outfile, schema, writer=csv.DictWriter):
         self.outfile = outfile
         self.outstream = open(outfile, 'w')
@@ -203,7 +207,7 @@ class TierUpWriter():
         self.outstream.close()
 
 class TierUpCSVWriter(TierUpWriter):
-
+    """TierUp report csv writer.  Writes all Tier3 variants analysed"""
     schema = pkg_resources.resource_string('jellypy.tierup', 'data/report.schema')
 
     def __init__(self, *args, **kwargs):
@@ -211,7 +215,7 @@ class TierUpCSVWriter(TierUpWriter):
         self.writer.writeheader()
 
 class TierUpSummaryWriter(TierUpWriter):
-
+    """TierUp summary report writer. Writes only Tier3 variants that have increased Tier"""
     schema = pkg_resources.resource_string('jellypy.tierup', 'data/summary_report.schema')
 
     def __init__(self, *args, **kwargs):

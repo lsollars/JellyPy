@@ -3,9 +3,7 @@
 import requests
 
 class GeLPanel():
-    """A GeL PanelApp Panel.
-    
-    """
+    """A GeL PanelApp Panel."""
     host = "https://panelapp.genomicsengland.co.uk/api/v1/panels"
     
     def __init__(self, panel, version=None):
@@ -19,6 +17,7 @@ class GeLPanel():
         self.version = float(self._json['version'])
         
     def get_gene_map(self):
+        """Returns a list mapping gene symbols to a (hgnc id, confidence level) tuple."""
         mapping = { gene['gene_data']['hgnc_symbol']: (gene['gene_data']['hgnc_id'], gene['confidence_level'])
             for gene in self._json['genes']
         }
@@ -59,7 +58,6 @@ class PanelApp():
 
     def _get_panels(self):
         """Get all panels from instance endpoint"""
-        # Get response from endpoint as dictionary
         response = requests.get(self.endpoint)
         response.raise_for_status()
         r = response.json()
@@ -69,17 +67,18 @@ class PanelApp():
         # API responses from the /panels endpoint are paginated.
         # While the response dictionary contains a url for the next page.
         while r['next']:
-            # Set the response dictionary using the next page of API results.
+            # Get panels from the next page of API results.
             response = requests.get(r['next'])
             r = response.json()
-            # Yield panels from current API results
             for panel in r['results']:
                 yield panel
 
     def __iter__(self):
+        # Allows `for x in y` syntax to be used on instances.
         return self
 
     def __next__(self):
+        # Allwos `for x in y` syntax to be used on instances.
         if self.head:
             while self.counter < self.head:
                 self.counter += 1
